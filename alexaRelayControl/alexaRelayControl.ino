@@ -351,7 +351,7 @@ boolean connectWifi()
     int i = 0;
 
     WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
     Serial.println("");
     Serial.println("Connecting to WiFi");
 
@@ -373,7 +373,7 @@ boolean connectWifi()
     {
         Serial.println("");
         Serial.print("Connected to ");
-        Serial.println(ssid);
+        Serial.println(WIFI_SSID);
         Serial.print("IP address: ");
         Serial.println(WiFi.localIP());
     }
