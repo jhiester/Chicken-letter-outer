@@ -5,7 +5,7 @@
 #include "switch.h"
 #include "UpnpBroadcastResponder.h"
 #include "CallbackFunction.h"
-#include "creds.h"
+#include "creds.h"  // wifi credentials
 
 #define MOTOR_CW_PIN 14
 #define MOTOR_CCW_PIN 12
@@ -20,27 +20,15 @@ void close();
 void stop();
 
 //on/off callbacks
-bool officeLightsOn();
-bool officeLightsOff();
-bool kitchenLightsOn();
-bool kitchenLightsOff();
 bool openCoopDoor();
 bool closeCoopDoor();
-
-// Change this before you flash
-//const char* ssid = WIFI_SSID;
-//const char* password = WIFI_PASS;
 
 boolean wifiConnected = false;
 
 UpnpBroadcastResponder upnpBroadcastResponder;
 
 Switch *door = NULL;
-Switch *office = NULL;
-Switch *kitchen = NULL;
 
-bool isOfficeLightsOn = false;
-bool isKitchenLightstsOn = false;
 bool isDoorOpen = false;
 
 void setup()
@@ -54,7 +42,7 @@ void setup()
   digitalWrite(MOTOR_CW_PIN, LOW);
   digitalWrite(MOTOR_CCW_PIN, LOW);
 
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   // Initialise wifi connection
   wifiConnected = connectWifi();
@@ -64,13 +52,9 @@ void setup()
 
     // Define your switches here. Max 10
     // Format: Alexa invocation name, local port no, on callback, off callback
-    office = new Switch("office lights", 80, officeLightsOn, officeLightsOff);
-    kitchen = new Switch("kitchen lights", 81, kitchenLightsOn, kitchenLightsOff);
     door = new Switch("coop door", 82, openCoopDoor, closeCoopDoor);
 
     Serial.println("Adding switches upnp broadcast responder");
-    upnpBroadcastResponder.addDevice(*office);
-    upnpBroadcastResponder.addDevice(*kitchen);
     upnpBroadcastResponder.addDevice(*door);
   }
 }
@@ -80,8 +64,6 @@ void loop()
   if (wifiConnected) {
     upnpBroadcastResponder.serverLoop();
 
-    kitchen->serverLoop();
-    office->serverLoop();
     door->serverLoop();
   }
 }
@@ -129,34 +111,6 @@ bool closeCoopDoor() {
   close();
   isDoorOpen = false;
   return isDoorOpen;
-}
-
-bool officeLightsOn() {
-  Serial.println("Switch 1 turn on ...");
-
-  isOfficeLightsOn = true;
-  return isOfficeLightsOn;
-}
-
-bool officeLightsOff() {
-  Serial.println("Switch 1 turn off ...");
-
-  isOfficeLightsOn = false;
-  return isOfficeLightsOn;
-}
-
-bool kitchenLightsOn() {
-  Serial.println("Switch 2 turn on ...");
-
-  isKitchenLightstsOn = true;
-  return isKitchenLightstsOn;
-}
-
-bool kitchenLightsOff() {
-  Serial.println("Switch 2 turn off ...");
-
-  isKitchenLightstsOn = false;
-  return isKitchenLightstsOn;
 }
 
 // connect to wifi – returns true if successful or false if not
