@@ -77,7 +77,6 @@ void open() {
   }
 
   stop();
-  delay(2000);
 }
 
 
@@ -89,13 +88,13 @@ void close() {
   }
 
   stop();
-  delay(2000);
 }
 
 
 void stop() {
   digitalWrite(MOTOR_CW_PIN, LOW);
   digitalWrite(MOTOR_CCW_PIN, LOW);
+  delay(2000);
 }
 
 bool openCoopDoor () {
