@@ -56,6 +56,8 @@ void setup()
 
     Serial.println("Adding switches upnp broadcast responder");
     upnpBroadcastResponder.addDevice(*door);
+  } else {
+    println("Could not connect to wifi");
   }
 }
 
@@ -65,6 +67,8 @@ void loop()
     upnpBroadcastResponder.serverLoop();
 
     door->serverLoop();
+  } else {
+    connectWifi();
   }
 }
 
@@ -103,7 +107,6 @@ bool openCoopDoor () {
   isDoorOpen = true;
   return isDoorOpen;
 }
-
 
 bool closeCoopDoor() {
   Serial.println("Open coop door.");
