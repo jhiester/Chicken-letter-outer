@@ -122,15 +122,16 @@ void stop() {
   delay(2000);
 }
 
-bool openCoopDoor() {
+bool openCoopDoor(ESP8266WebServer& server) {
   Serial.println("Open coop door.");
   open();
   isDoorOpen = true;
+  server.send(200, "text/html", getPage());
   return isDoorOpen;
 }
 
 bool closeCoopDoor() {
-  Serial.println("Open coop door.");
+  Serial.println("Close coop door.");
   close();
   isDoorOpen = false;
   return isDoorOpen;
