@@ -31,6 +31,8 @@ Switch *door = NULL;
 
 bool isDoorOpen = false;
 
+ESP8266WebServer server(81);
+
 void setup()
 {
 
@@ -52,13 +54,28 @@ void setup()
 
     // Define your switches here. Max 10
     // Format: Alexa invocation name, local port no, on callback, off callback
-    door = new Switch("coop door", 82, openCoopDoor, closeCoopDoor);
+    door = new Switch("coop door", 80, openCoopDoor, closeCoopDoor);
 
     Serial.println("Adding switches upnp broadcast responder");
     upnpBroadcastResponder.addDevice(*door);
+
+    server.on("/", HTTP_GET, handleRoot);
+    server.on("/freeRange", HTTP_POST, openCoopDoor);
+    server.on("/lockdown", HTTP_POST, closeCoopDoor);
+
+    //server.onNotFound(handleNotFound);
+    server.begin();
+  
+    Serial.println("WebServer started on port: ");
+    Serial.println("81");
+    
   } else {
-    println("Could not connect to wifi");
+    Serial.println("Could not connect to wifi");
   }
+}
+
+void handleRoot() {
+  server.send(200, "text/html", "hey there");
 }
 
 void loop()
@@ -67,6 +84,7 @@ void loop()
     upnpBroadcastResponder.serverLoop();
 
     door->serverLoop();
+    server.handleClient();
   } else {
     connectWifi();
   }
