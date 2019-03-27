@@ -1,5 +1,6 @@
-String getPage() {
-  String page = "<!DOCTYPE html>";
+String getPage()
+{
+    String page = "<!DOCTYPE html>";
     page += "<html lang='en'>";
     page += "<head>";
     page += "    <meta charset='UTF-8'>";
@@ -7,14 +8,26 @@ String getPage() {
     page += "    <meta http-equiv='X-UA-Compatible' content='ie=edge'>";
     page += "    <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css'";
     page += "        integrity='sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T' crossorigin='anonymous'>";
-    page += "    <link rel='stylesheet' href='./style.css'>";
+    page += " <style>";
+    page += "    body {";
+    page += "display: grid;";
+    page += "height: 100vh;";
+    page += " margin: 0;";
+    page += " place-items: center center;";
+    page += "}";
+    page += ".container {";
+    page += "display: flex;";
+    page += "justify-content: center;";
+    page += "align-items: center;";
+    page += " }";
+    page += "</style>";
     page += "    <title>chicken letter outer</title>";
     page += "</head>";
     page += "<body>";
     page += "    <div class='container'>";
     page += "        <div class='row'>";
     page += "            <div class='col'>";
-    page += "                <form action='/lockup' method='POST'>";
+    page += "                <form action='/lockdown' method='POST'>";
     page += "                    <button type='button' class='btn btn-outline-dark mt-3'>let the bitches out</button>";
     page += "                </form>";
     page += "                <form action='/freerange' method='POST'>";
@@ -35,5 +48,5 @@ String getPage() {
     page += "</body>";
     page += "</html>";
 
-  return page;
+    return page;
 }

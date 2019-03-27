@@ -60,8 +60,8 @@ void setup()
     Serial.println("Adding switches upnp broadcast responder");
     upnpBroadcastResponder.addDevice(*door);
 
-    server.on("/", HTTP_GET, getPage);
-    server.on("/freeRange", HTTP_POST, openCoopDoor);
+    server.on("/", HTTP_GET, handleRoot);
+    server.on("/freerange", HTTP_POST, openCoopDoor);
     server.on("/lockdown", HTTP_POST, closeCoopDoor);
 
     //server.onNotFound(handleNotFound);
@@ -76,7 +76,7 @@ void setup()
 }
 
 void handleRoot() {
-  server.send(200, "text/html", "hey there");
+  server.send(200, "text/html", getPage());
 }
 //https://github.com/esp8266/ESPWebServer/blob/master/src/ESP8266WebServer.h
 //https://diyprojects.io/bootstrap-create-beautiful-web-interface-projects-esp8266/
@@ -87,6 +87,7 @@ void loop()
 
     door->serverLoop();
     server.handleClient();
+    delay(1000);
   } else {
     connectWifi();
   }
