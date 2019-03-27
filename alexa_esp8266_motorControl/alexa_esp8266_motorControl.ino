@@ -6,6 +6,7 @@
 #include "UpnpBroadcastResponder.h"
 #include "CallbackFunction.h"
 #include "creds.h"  // wifi credentials
+#include "webPage.h" // the web interface for the door control
 
 #define MOTOR_CW_PIN 14
 #define MOTOR_CCW_PIN 12
@@ -59,7 +60,7 @@ void setup()
     Serial.println("Adding switches upnp broadcast responder");
     upnpBroadcastResponder.addDevice(*door);
 
-    server.on("/", HTTP_GET, handleRoot);
+    server.on("/", HTTP_GET, getPage);
     server.on("/freeRange", HTTP_POST, openCoopDoor);
     server.on("/lockdown", HTTP_POST, closeCoopDoor);
 
@@ -77,7 +78,8 @@ void setup()
 void handleRoot() {
   server.send(200, "text/html", "hey there");
 }
-
+//https://github.com/esp8266/ESPWebServer/blob/master/src/ESP8266WebServer.h
+//https://diyprojects.io/bootstrap-create-beautiful-web-interface-projects-esp8266/
 void loop()
 {
   if (wifiConnected) {
@@ -119,7 +121,7 @@ void stop() {
   delay(2000);
 }
 
-bool openCoopDoor () {
+bool openCoopDoor() {
   Serial.println("Open coop door.");
   open();
   isDoorOpen = true;
