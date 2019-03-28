@@ -57,7 +57,7 @@ void setup()
     Serial.println("Adding switches upnp broadcast responder");
     upnpBroadcastResponder.addDevice(*door);
   } else {
-    println("Could not connect to wifi");
+    Serial.println("Could not connect to wifi");
   }
 }
 
