@@ -1,41 +1,32 @@
+//
+// A simple server implementation showing how to:
+//  * serve static messages
+//  * read GET and POST parameters
+//  * handle missing pages / 404s
+//
+
+#include <Arduino.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
-#include <WiFiUdp.h>
-#include <functional>
-#include "switch.h"
-#include "UpnpBroadcastResponder.h"
-#include "CallbackFunction.h"
-#include "creds.h"  // wifi credentials
-#include "webPage.h" // the web interface for the door control
+#include <Hash.h>
+#include <ESPAsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include "webPage.h"
+#include "creds.h"
 
 #define MOTOR_CW_PIN 14
 #define MOTOR_CCW_PIN 12
 #define SWITCH_ONE_PIN 13
 #define SWITCH_TWO_PIN 5
 
-// prototypes
-boolean connectWifi();
-
-void open();
-void close();
-void stop();
-
-//on/off callbacks
-bool openCoopDoor();
-bool closeCoopDoor();
-
-boolean wifiConnected = false;
-
-UpnpBroadcastResponder upnpBroadcastResponder;
-
-Switch *door = NULL;
-
+AsyncWebServer server(80);
 bool isDoorOpen = false;
+const char* PARAM_MESSAGE = "message";
 
-ESP8266WebServer server(81);
+void notFound(AsyncWebServerRequest *request) {
+  request->send(404, "text/plain", "Not found");
+}
 
-void setup()
-{
+void setup() {
 
   pinMode(SWITCH_ONE_PIN, INPUT);
   pinMode(SWITCH_TWO_PIN, INPUT);
@@ -46,59 +37,79 @@ void setup()
   digitalWrite(MOTOR_CCW_PIN, LOW);
 
   Serial.begin(115200);
-
-  // Initialise wifi connection
-  wifiConnected = connectWifi();
-
-  if (wifiConnected) {
-    upnpBroadcastResponder.beginUdpMulticast();
-
-    // Define your switches here. Max 10
-    // Format: Alexa invocation name, local port no, on callback, off callback
-    door = new Switch("coop door", 80, openCoopDoor, closeCoopDoor);
-
-    Serial.println("Adding switches upnp broadcast responder");
-    upnpBroadcastResponder.addDevice(*door);
-
-    server.on("/", HTTP_GET, handleRoot);
-    server.on("/freerange", HTTP_POST, openCoopDoor);
-    server.on("/lockdown", HTTP_POST, closeCoopDoor);
-
-    //server.onNotFound(handleNotFound);
-    server.begin();
-  
-    Serial.println("WebServer started on port: ");
-    Serial.println("81");
-    
-  } else {
-    Serial.println("Could not connect to wifi");
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    Serial.printf("WiFi Failed!\n");
+    return;
   }
+
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("Hostname: ");
+  Serial.println(WiFi.hostname());
+
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
+    request->send(200, "text/html", getPage());
+  });
+
+  // Send a GET request to <IP>/get?message=<message>
+  server.on("/freerange", HTTP_GET, [] (AsyncWebServerRequest * request) {
+    String message;
+    if (request->hasParam(PARAM_MESSAGE)) {
+      message = request->getParam(PARAM_MESSAGE)->value();
+    } else {
+      message = "No message sent";
+    }
+    request->send(200, "text/plain", "Hello, GET: " + message);
+  });
+
+  // Send a POST request to <IP>/post with a form field message set to <message>
+  server.on("/post", HTTP_POST, [](AsyncWebServerRequest * request) {
+    String message;
+    if (request->hasParam(PARAM_MESSAGE, true)) {
+      message = request->getParam(PARAM_MESSAGE, true)->value();
+    } else {
+      message = "No message sent";
+    }
+    request->send(200, "text/plain", "Hello, POST: " + message);
+  });
+
+  // Send a POST request to <IP>/post with a form field message set to <message>
+  server.on("/", HTTP_POST, [](AsyncWebServerRequest * request) {
+    String state;
+    if (request->hasParam("freerange", true)) {
+      state = request->getParam("freerange", true)->value();
+      Serial.println("let 'em out");
+      digitalWrite(MOTOR_CW_PIN, HIGH);
+      Serial.println("let 'em out done");
+    } else {
+      Serial.println("keep 'em locked up");
+    }
+    request->redirect("/");
+  });
+
+  server.onNotFound(notFound);
+
+  server.begin();
 }
 
-void handleRoot() {
-  server.send(200, "text/html", getPage());
+void loop() {  
+  yield();
 }
-//https://github.com/esp8266/ESPWebServer/blob/master/src/ESP8266WebServer.h
-//https://diyprojects.io/bootstrap-create-beautiful-web-interface-projects-esp8266/
-void loop()
-{
-  if (wifiConnected) {
-    upnpBroadcastResponder.serverLoop();
-
-    door->serverLoop();
-    server.handleClient();
-    delay(1000);
-  } else {
-    connectWifi();
-  }
-}
-
 
 void open() {
-  while (digitalRead(SWITCH_TWO_PIN) == HIGH) {
+  int value1 = digitalRead(SWITCH_ONE_PIN);
+  int value2 = digitalRead(SWITCH_TWO_PIN);
+  
+  Serial.println(value1, DEC);
+  Serial.println(value2, DEC);
+  
+  while (digitalRead(SWITCH_TWO_PIN) == HIGH) {    
     digitalWrite(MOTOR_CW_PIN, HIGH);
     digitalWrite(MOTOR_CCW_PIN, LOW);
-    yield();
+    Serial.println(digitalRead(MOTOR_CW_PIN), DEC);    
+    wdt_reset();
   }
 
   stop();
@@ -109,7 +120,7 @@ void close() {
   while (digitalRead(SWITCH_ONE_PIN) == HIGH) {
     digitalWrite(MOTOR_CW_PIN, LOW);
     digitalWrite(MOTOR_CCW_PIN, HIGH);
-    yield();
+    //yield();
   }
 
   stop();
@@ -119,58 +130,19 @@ void close() {
 void stop() {
   digitalWrite(MOTOR_CW_PIN, LOW);
   digitalWrite(MOTOR_CCW_PIN, LOW);
-  delay(2000);
+  //delay(2000);
 }
 
 bool openCoopDoor() {
   Serial.println("Open coop door.");
-  server.send(200, "text/html", getPage());
   open();
-  isDoorOpen = true;  
+  isDoorOpen = true;
   return isDoorOpen;
 }
 
 bool closeCoopDoor() {
-  Serial.println("Close coop door.");
-  server.send(200, "text/html", getPage());
+  Serial.println("Close coop door.");  
   close();
   isDoorOpen = false;
   return isDoorOpen;
-}
-
-// connect to wifi – returns true if successful or false if not
-boolean connectWifi() {
-  boolean state = true;
-  int i = 0;
-
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  Serial.println("");
-  Serial.println("Connecting to WiFi");
-
-  // Wait for connection
-  Serial.print("Connecting ...");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-    if (i > 10) {
-      state = false;
-      break;
-    }
-    i++;
-  }
-
-  if (state) {
-    Serial.println("");
-    Serial.print("Connected to ");
-    Serial.println(WIFI_SSID);
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-  }
-  else {
-    Serial.println("");
-    Serial.println("Connection failed.");
-  }
-
-  return state;
 }
