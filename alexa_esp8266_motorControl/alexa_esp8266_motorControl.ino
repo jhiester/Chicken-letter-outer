@@ -81,12 +81,18 @@ void setup() {
     if (request->hasParam("freerange", true)) {
       state = request->getParam("freerange", true)->value();
       Serial.println("let 'em out");
-      digitalWrite(MOTOR_CW_PIN, HIGH);
-      Serial.println("let 'em out done");
-    } else {
-      Serial.println("keep 'em locked up");
+      open();
+      request->send(200, "text/plain", "");
+      request->redirect("/");
     }
-    request->redirect("/");
+
+    if (request->hasParam("lockdown", true)) {
+      state = request->getParam("freerange", true)->value();
+      Serial.println("let 'em out");
+      close();
+      request->send(200, "text/plain", "");
+      request->redirect("/");
+    }
   });
 
   server.onNotFound(notFound);
@@ -120,6 +126,8 @@ void close() {
   while (digitalRead(SWITCH_ONE_PIN) == HIGH) {
     digitalWrite(MOTOR_CW_PIN, LOW);
     digitalWrite(MOTOR_CCW_PIN, HIGH);
+    Serial.println(digitalRead(MOTOR_CCW_PIN), DEC);    
+    wdt_reset();
     //yield();
   }
 
