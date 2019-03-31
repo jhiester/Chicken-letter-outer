@@ -67,6 +67,18 @@ void setup()
     webServer.send(200, "text/html", getPage());      
   });
 
+  webServer.on("/", HTTP_POST, []() {
+    if (webServer.hasArg("freerange") == true) {
+      openCoopDoor();
+      webServer.send(200, "text/html", getPage());
+    } else if (webServer.hasArg("lockdown") == true) {
+      closeCoopDoor();
+      webServer.send(200, "text/html", getPage());
+    } else
+      webServer.send(404, "text/plain", "error");
+  });
+
+
   webServer.begin();
 }
 
@@ -114,15 +126,15 @@ void stop() {
 bool openCoopDoor () {
   Serial.println("Open coop door.");
   open();
-  isDoorOpen = true;
-  return isDoorOpen;
 }
 
 bool closeCoopDoor() {
   Serial.println("Open coop door.");
   close();
-  isDoorOpen = false;
-  return isDoorOpen;
+}
+
+void notFound() {
+  webServer.send(404, "text/plain", "Not found");
 }
 
 // connect to wifi – returns true if successful or false if not
