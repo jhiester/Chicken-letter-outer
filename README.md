@@ -3,4 +3,4 @@ This is a constantly (and intermittently) evolving project wherein I use an amaz
 
 I've tried several libraries to get the HUZZAHESP8266 board and Alexa to work together. With most libraries I had trouble getting Alexa to recognize the device. I'm currently using the [Sinric](https://github.com/kakopappa/sinric) library and may incorporte/switch to [aRest](https://github.com/marcoschwartz/aREST). 
 
-Currenlty, Alexa can detect and activate/deactivate the relay to control power to the motor. I'm in the process of building and testing the full circuit.
+The circuit works. The motor can be controlled by either Alexa or the web interface. I'm in the process of wiring the circuit to a perma-proto-board and building the door hardware.
