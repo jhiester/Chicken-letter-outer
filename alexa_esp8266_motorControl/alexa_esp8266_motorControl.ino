@@ -6,11 +6,14 @@
 #include "UpnpBroadcastResponder.h"
 #include "CallbackFunction.h"
 #include "creds.h"  // wifi credentials
+#include "webPage.h"
 
 #define MOTOR_CW_PIN 14
 #define MOTOR_CCW_PIN 12
 #define SWITCH_ONE_PIN 13
 #define SWITCH_TWO_PIN 5
+
+ESP8266WebServer webServer(3000);
 
 // prototypes
 boolean connectWifi();
@@ -59,6 +62,12 @@ void setup()
   } else {
     Serial.println("Could not connect to wifi");
   }
+
+  webServer.on("/", HTTP_GET, []() {
+    webServer.send(200, "text/html", getPage());      
+  });
+
+  webServer.begin();
 }
 
 void loop()
@@ -67,6 +76,7 @@ void loop()
     upnpBroadcastResponder.serverLoop();
 
     door->serverLoop();
+    webServer.handleClient();
   } else {
     connectWifi();
   }
