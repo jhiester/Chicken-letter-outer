@@ -25,6 +25,7 @@ void stop();
 //on/off callbacks
 bool openCoopDoor();
 bool closeCoopDoor();
+bool isDoorOpen();
 
 boolean wifiConnected = false;
 
@@ -32,11 +33,11 @@ UpnpBroadcastResponder upnpBroadcastResponder;
 
 Switch *door = NULL;
 
-bool isDoorOpen = false;
+
 
 void setup()
 {
-
+  
   pinMode(SWITCH_ONE_PIN, INPUT);
   pinMode(SWITCH_TWO_PIN, INPUT);
   pinMode(MOTOR_CW_PIN, OUTPUT);
@@ -44,6 +45,8 @@ void setup()
 
   digitalWrite(MOTOR_CW_PIN, LOW);
   digitalWrite(MOTOR_CCW_PIN, LOW);
+
+
 
   Serial.begin(115200);
 
@@ -63,17 +66,22 @@ void setup()
     Serial.println("Could not connect to wifi");
   }
 
-  webServer.on("/", HTTP_GET, []() {
-    webServer.send(200, "text/html", getPage());      
+  bool doorStatus = isDoorOpen();
+
+  webServer.on("/", HTTP_GET, [& doorStatus]() {  
+    doorStatus = isDoorOpen();  
+    webServer.send(200, "text/html", getPage(doorStatus));      
   });
 
-  webServer.on("/", HTTP_POST, []() {
+  webServer.on("/", HTTP_POST, [& doorStatus]() {
     if (webServer.hasArg("freerange") == true) {
       openCoopDoor();
-      webServer.send(200, "text/html", getPage());
+      doorStatus = isDoorOpen();
+      webServer.send(200, "text/html", getPage(doorStatus));
     } else if (webServer.hasArg("lockdown") == true) {
       closeCoopDoor();
-      webServer.send(200, "text/html", getPage());
+      doorStatus = isDoorOpen();
+      webServer.send(200, "text/html", getPage(doorStatus));
     } else
       webServer.send(404, "text/plain", "error");
   });
@@ -94,6 +102,12 @@ void loop()
   }
 }
 
+bool isDoorOpen() {
+  if (digitalRead(SWITCH_ONE_PIN) == HIGH)
+    return true;
+  else
+    return false;
+}
 
 void open() {
   while (digitalRead(SWITCH_TWO_PIN) == HIGH) {
