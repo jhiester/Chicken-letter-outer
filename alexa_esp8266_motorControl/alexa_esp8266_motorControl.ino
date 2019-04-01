@@ -7,27 +7,45 @@
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-#include <Hash.h>
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
+#include <ESP8266WebServer.h>
+#include <WiFiUdp.h>
+#include <functional>
+#include "switch.h"
+#include "UpnpBroadcastResponder.h"
+#include "CallbackFunction.h"
+#include "creds.h"  // wifi credentials
 #include "webPage.h"
-#include "creds.h"
 
 #define MOTOR_CW_PIN 14
 #define MOTOR_CCW_PIN 12
 #define SWITCH_ONE_PIN 13
 #define SWITCH_TWO_PIN 5
 
-AsyncWebServer server(80);
-bool isDoorOpen = false;
-const char* PARAM_MESSAGE = "message";
+ESP8266WebServer webServer(3000);
 
-void notFound(AsyncWebServerRequest *request) {
-  request->send(404, "text/plain", "Not found");
-}
+// prototypes
+boolean connectWifi();
 
-void setup() {
+void open();
+void close();
+void stop();
 
+//on/off callbacks
+bool openCoopDoor();
+bool closeCoopDoor();
+bool isDoorOpen();
+
+boolean wifiConnected = false;
+
+UpnpBroadcastResponder upnpBroadcastResponder;
+
+Switch *door = NULL;
+
+
+
+void setup()
+{
+  
   pinMode(SWITCH_ONE_PIN, INPUT);
   pinMode(SWITCH_TWO_PIN, INPUT);
   pinMode(MOTOR_CW_PIN, OUTPUT);
@@ -35,6 +53,8 @@ void setup() {
 
   digitalWrite(MOTOR_CW_PIN, LOW);
   digitalWrite(MOTOR_CCW_PIN, LOW);
+
+
 
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
@@ -97,11 +117,53 @@ void setup() {
 
   server.onNotFound(notFound);
 
-  server.begin();
+    Serial.println("Adding switches upnp broadcast responder");
+    upnpBroadcastResponder.addDevice(*door);
+  } else {
+    Serial.println("Could not connect to wifi");
+  }
+
+  bool doorStatus = isDoorOpen();
+
+  webServer.on("/", HTTP_GET, [& doorStatus]() {  
+    doorStatus = isDoorOpen();  
+    webServer.send(200, "text/html", getPage(doorStatus));      
+  });
+
+  webServer.on("/", HTTP_POST, [& doorStatus]() {
+    if (webServer.hasArg("freerange") == true) {
+      openCoopDoor();
+      doorStatus = isDoorOpen();
+      webServer.send(200, "text/html", getPage(doorStatus));
+    } else if (webServer.hasArg("lockdown") == true) {
+      closeCoopDoor();
+      doorStatus = isDoorOpen();
+      webServer.send(200, "text/html", getPage(doorStatus));
+    } else
+      webServer.send(404, "text/plain", "error");
+  });
+
+
+  webServer.begin();
 }
 
-void loop() {  
-  yield();
+void loop()
+{
+  if (wifiConnected) {
+    upnpBroadcastResponder.serverLoop();
+
+    door->serverLoop();
+    webServer.handleClient();
+  } else {
+    connectWifi();
+  }
+}
+
+bool isDoorOpen() {
+  if (digitalRead(SWITCH_ONE_PIN) == HIGH)
+    return true;
+  else
+    return false;
 }
 
 void open() {
@@ -144,13 +206,13 @@ void stop() {
 bool openCoopDoor() {
   Serial.println("Open coop door.");
   open();
-  isDoorOpen = true;
-  return isDoorOpen;
 }
 
 bool closeCoopDoor() {
   Serial.println("Close coop door.");  
   close();
-  isDoorOpen = false;
-  return isDoorOpen;
+}
+
+void notFound() {
+  webServer.send(404, "text/plain", "Not found");
 }
