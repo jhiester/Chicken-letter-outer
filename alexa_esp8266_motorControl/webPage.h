@@ -28,10 +28,10 @@ String getPage()
     page += "        <div class='row'>";
     page += "            <div class='col'>";
     page += "                <form action='/' method='POST'>";
-    page += "                    <button type='button submit' name='freerange' value='1' class='btn btn-outline-dark mt-3'>let the bitches out</button>";
+    page += "                    <button type='button submit' name='freerange' value='1' class='btn btn-block btn-outline-dark mt-3'>let the bitches out</button>";
     page += "                </form>";
     page += "                <form action='/' method='POST'>";
-    page += "                    <button type='button submit' name='lockdown' value='1' class='btn btn-outline-dark mt-3'>lock the bitches up</button>";
+    page += "                    <button type='button submit' name='lockdown' value='1' class='btn btn-block btn-outline-dark mt-3'>lock the bitches up</button>";
     page += "                </form>";
     page += "            </div>";
     page += "        </div>";
