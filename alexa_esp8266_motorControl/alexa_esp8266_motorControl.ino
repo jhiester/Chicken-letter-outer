@@ -7,6 +7,7 @@
 #include "CallbackFunction.h"
 #include "creds.h"  // wifi credentials
 #include "webPage.h"
+#include "PubSubClient.h"
 
 #define MOTOR_CW_PIN 14
 #define MOTOR_CCW_PIN 12
