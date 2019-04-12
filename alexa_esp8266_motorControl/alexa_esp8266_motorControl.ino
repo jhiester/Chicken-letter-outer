@@ -6,15 +6,12 @@
 #include "UpnpBroadcastResponder.h"
 #include "CallbackFunction.h"
 #include "creds.h"  // wifi credentials
-#include "webPage.h"
 #include "PubSubClient.h"
 
 #define MOTOR_CW_PIN 14
 #define MOTOR_CCW_PIN 12
 #define SWITCH_ONE_PIN 13
 #define SWITCH_TWO_PIN 5
-
-ESP8266WebServer webServer(3000);
 
 // prototypes
 boolean connectWifi();
@@ -28,7 +25,7 @@ bool openCoopDoor();
 bool closeCoopDoor();
 bool isDoorOpen();
 
-boolean wifiConnected = false;
+bool wifiConnected = false;
 
 UpnpBroadcastResponder upnpBroadcastResponder;
 
@@ -57,6 +54,8 @@ void setup()
   if (wifiConnected) {
     upnpBroadcastResponder.beginUdpMulticast();
 
+    
+    // TRY: HAVE ALEXA SEND A MQTT MESSAGE TO THE OPEN/CLOSE TOPIC INSTEAD OF CALLING THE FUNCTIONS DIRECTLY
     // Define your switches here. Max 10
     // Format: Alexa invocation name, local port no, on callback, off callback
     door = new Switch("coop door", 82, openCoopDoor, closeCoopDoor);
@@ -67,28 +66,7 @@ void setup()
     Serial.println("Could not connect to wifi");
   }
 
-  bool doorStatus = isDoorOpen();
-
-  webServer.on("/", HTTP_GET, [& doorStatus]() {  
-    doorStatus = isDoorOpen();  
-    webServer.send(200, "text/html", getPage(doorStatus));      
-  });
-
-  webServer.on("/", HTTP_POST, [& doorStatus]() {
-    if (webServer.hasArg("freerange") == true) {
-      openCoopDoor();
-      doorStatus = isDoorOpen();
-      webServer.send(200, "text/html", getPage(doorStatus));
-    } else if (webServer.hasArg("lockdown") == true) {
-      closeCoopDoor();
-      doorStatus = isDoorOpen();
-      webServer.send(200, "text/html", getPage(doorStatus));
-    } else
-      webServer.send(404, "text/plain", "error");
-  });
-
-
-  webServer.begin();
+  // MQTT subscriptions
 }
 
 void loop()
@@ -96,21 +74,24 @@ void loop()
   if (wifiConnected) {
     upnpBroadcastResponder.serverLoop();
 
-    door->serverLoop();
-    webServer.handleClient();
+    door->serverLoop();    
   } else {
     connectWifi();
   }
 }
 
 bool isDoorOpen() {
-  if (digitalRead(SWITCH_ONE_PIN) == HIGH)
+  if (digitalRead(SWITCH_ONE_PIN) == HIGH) {
+    // broadcast 1 to doorStatus via MQTT
     return true;
-  else
+  } else { 
+    // broadcast 0 to doorStatus via MQTT
     return false;
+  }
 }
 
 void open() {
+  // call when MQTT message received on the doorOpen topic
   while (digitalRead(SWITCH_TWO_PIN) == HIGH) {
     digitalWrite(MOTOR_CW_PIN, HIGH);
     digitalWrite(MOTOR_CCW_PIN, LOW);
@@ -118,10 +99,12 @@ void open() {
   }
 
   stop();
+  
 }
 
 
 void close() {
+  // call when MQTT message received on the doorClose topic
   while (digitalRead(SWITCH_ONE_PIN) == HIGH) {
     digitalWrite(MOTOR_CW_PIN, LOW);
     digitalWrite(MOTOR_CCW_PIN, HIGH);
@@ -129,6 +112,7 @@ void close() {
   }
 
   stop();
+ 
 }
 
 
@@ -141,11 +125,13 @@ void stop() {
 bool openCoopDoor () {
   Serial.println("Open coop door.");
   open();
+  // broadcast via MQTT to the doorStatus topic that the door is open
 }
 
 bool closeCoopDoor() {
   Serial.println("Open coop door.");
   close();
+  // broadcast via MQTT to the doorStatus topic that the door is closed
 }
 
 void notFound() {
