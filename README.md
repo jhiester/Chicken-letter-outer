@@ -1,6 +1,5 @@
-# Chicken-letter-outer
-This is a constantly (and intermittently) evolving project wherein I use an amazon Alexa device along with a HUZZAHESP8266 Feather board from Adafruit to create a simple voice controlled chicken coop door opener. 
+This is a constantly (and intermittently) evolving project.
 
-I've tried several libraries to get the HUZZAHESP8266 board and Alexa to work together. With most libraries I had trouble getting Alexa to recognize the device. I'm currently using the [Sinric](https://github.com/kakopappa/sinric) library and may incorporte/switch to [aRest](https://github.com/marcoschwartz/aREST). 
+I use an amazon echo dot along with a HUZZAHESP8266 Feather board from Adafruit to create a simple voice controlled chicken coop door opener. The motor can also be controlled via a web interface. I'm not very happy with the implementation of the web interface and controls. I'm looking into using my old raspberry-pi computer to serve node-red and a MQTT broker as an alternative. The initial tests are promising.
 
-The circuit works. The motor can be controlled by either Alexa or the web interface. I'm in the process of wiring the circuit to a perma-proto-board and building the door hardware.
+I've tried several libraries to get the HUZZAHESP8266 board and Alexa to work together. With most libraries I had trouble getting Alexa to recognize the device. I'm currently using the Sinric library and may incorporte/switch to aRest.
